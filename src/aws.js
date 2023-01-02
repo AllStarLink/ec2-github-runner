@@ -36,6 +36,14 @@ async function startEc2Instance(label, githubRegistrationToken) {
   const userData = buildUserDataScript(githubRegistrationToken, label);
 
   const params = {
+     BlockDeviceMappings: [
+     {
+      DeviceName: "/dev/xvda", 
+      Ebs: {
+       VolumeSize: 16
+      }
+     }
+    ], 
     ImageId: config.input.ec2ImageId,
     InstanceType: config.input.ec2InstanceType,
     MinCount: 1,
@@ -45,14 +53,6 @@ async function startEc2Instance(label, githubRegistrationToken) {
     SecurityGroupIds: [config.input.securityGroupId],
     IamInstanceProfile: { Name: config.input.iamRoleName },
     TagSpecifications: config.tagSpecifications,
-    BlockDeviceMappings: [
-     {
-      DeviceName: "/dev/xvda", 
-      Ebs: {
-       VolumeSize: 16
-      }
-     }
-    ], 
   };
 
   try {

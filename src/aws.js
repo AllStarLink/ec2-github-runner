@@ -38,9 +38,9 @@ async function startEc2Instance(label, githubRegistrationToken) {
   const params = {
      BlockDeviceMappings: [
      {
-      DeviceName: "/dev/xvda", 
-      Ebs: {
-       VolumeSize: 16
+      "DeviceName": "/dev/xvda", 
+      "Ebs": {
+       "VolumeSize": 16
       }
      }
     ], 

@@ -30,6 +30,7 @@ async function startEc2Instance(label, githubRegistrationToken) {
     IamInstanceProfile: { Name: config.input.iamRoleName },
     TagSpecifications: config.tagSpecifications,
   };
+  core.info(`here!`);
 
   try {
     const result = await ec2.runInstances(params).promise();

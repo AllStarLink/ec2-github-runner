@@ -40,7 +40,7 @@ async function startEc2Instance(label, githubRegistrationToken) {
       {
         DeviceName: '/dev/xvda',
         Ebs: {
-          VolumeSize: '16'
+          VolumeSize: 16
         }
       }
     ], 

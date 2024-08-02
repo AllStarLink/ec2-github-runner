@@ -1,5 +1,13 @@
 # On-demand self-hosted AWS EC2 runner for GitHub Actions
 
+⚠️ If you like the project, please consider [supporting Ukraine](https://bit.ly/3KeY7dc) in a [war](https://en.wikipedia.org/wiki/2022_Russian_invasion_of_Ukraine) against russian occupants. Any help would be much appreciated!
+
+[<img src="https://user-images.githubusercontent.com/2857712/156607570-8c9fd15b-8b44-41b3-bec3-312267af324f.png" width="500">](https://supportukrainenow.org)
+
+(image by [Nina Dzyvulska](https://www.behance.net/ninadz))
+
+---
+
 [![awesome-runners](https://img.shields.io/badge/listed%20on-awesome--runners-blue.svg)](https://github.com/jonico/awesome-runners)
 
 Start your EC2 [self-hosted runner](https://docs.github.com/en/free-pro-team@latest/actions/hosting-your-own-runners) right before you need it.
@@ -153,6 +161,7 @@ Use the following steps to prepare your workflow for running on your EC2 self-ho
     sudo yum update -y && \
     sudo yum install docker -y && \
     sudo yum install git -y && \
+    sudo yum install libicu -y && \
     sudo systemctl enable docker
    ```
 
@@ -161,6 +170,8 @@ Use the following steps to prepare your workflow for running on your EC2 self-ho
 3. Install any other tools required for your workflow.
 4. Create a new EC2 image (AMI) from the instance.
 5. Remove the instance if not required anymore after the image is created.
+
+Alternatively, you can use a vanilla EC2 AMI and set up the dependencies via `pre-runner-script` in the workflow YAML file. See example in the `pre-runner-script` documentation below.
 
 **4. Prepare VPC with subnet and security group**
 
@@ -194,6 +205,8 @@ Now you're ready to go!
 | `iam-role-name`                                                                                                                                                              | Optional. Used only with the `start` mode. | IAM role name to attach to the created EC2 runner. <br><br> This allows the runner to have permissions to run additional actions within the AWS account, without having to manage additional GitHub secrets and AWS users. <br><br> Setting this requires additional AWS permissions for the role launching the instance (see above). |
 | `aws-resource-tags`                                                                                                                                                          | Optional. Used only with the `start` mode. | Specifies tags to add to the EC2 instance and any attached storage. <br><br> This field is a stringified JSON array of tag objects, each containing a `Key` and `Value` field (see example below). <br><br> Setting this requires additional AWS permissions for the role launching the instance (see above).                         |
 | `runner-home-dir`                                                                                                                                                              | Optional. Used only with the `start` mode. | Specifies a directory where pre-installed actions-runner software and scripts are located.<br><br> |
+| `pre-runner-script`                                                                                                                                                              | Optional. Used only with the `start` mode. | Specifies bash commands to run before the runner starts.  It's useful for installing dependencies with apt-get, yum, dnf, etc. For example:<pre>          - name: Start EC2 runner<br>            with:<br>              mode: start<br>              ...<br>              pre-runner-script: \|<br>                 sudo yum update -y && \ <br>                 sudo yum install docker git libicu -y<br>                 sudo systemctl enable docker</pre>
+<br><br> |
 
 ### Environment variables
 

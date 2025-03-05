@@ -1,4 +1,5 @@
-const AWS = require('aws-sdk');
+const { EC2Client, RunInstancesCommand, TerminateInstancesCommand, waitUntilInstanceRunning } = require('@aws-sdk/client-ec2');
+
 const core = require('@actions/core');
 const config = require('./config');
 
@@ -32,8 +33,21 @@ function buildUserDataScript(githubRegistrationToken, label) {
   }
 }
 
+function buildMarketOptions() {
+  if (config.input.marketType !== 'spot') {
+    return undefined;
+  }
+
+  return {
+    MarketType: config.input.marketType,
+    SpotOptions: {
+      SpotInstanceType: 'one-time',
+    },
+  };
+}
+
 async function startEc2Instance(label, githubRegistrationToken) {
-  const ec2 = new AWS.EC2();
+  const ec2 = new EC2Client();
 
   const userData = buildUserDataScript(githubRegistrationToken, label);
 
@@ -48,17 +62,18 @@ async function startEc2Instance(label, githubRegistrationToken) {
     ], 
     ImageId: config.input.ec2ImageId,
     InstanceType: config.input.ec2InstanceType,
-    MinCount: 1,
     MaxCount: 1,
-    UserData: Buffer.from(userData.join('\n')).toString('base64'),
-    SubnetId: config.input.subnetId,
+    MinCount: 1,
     SecurityGroupIds: [config.input.securityGroupId],
+    SubnetId: config.input.subnetId,
+    UserData: Buffer.from(userData.join('\n')).toString('base64'),
     IamInstanceProfile: { Name: config.input.iamRoleName },
     TagSpecifications: config.tagSpecifications,
+    InstanceMarketOptions: buildMarketOptions(),
   };
 
   try {
-    const result = await ec2.runInstances(params).promise();
+    const result = await ec2.send(new RunInstancesCommand(params));
     const ec2InstanceId = result.Instances[0].InstanceId;
     core.info(result.Instances[0]);
     core.info(`AWS EC2 instance ${ec2InstanceId} is started`);
@@ -70,14 +85,14 @@ async function startEc2Instance(label, githubRegistrationToken) {
 }
 
 async function terminateEc2Instance() {
-  const ec2 = new AWS.EC2();
+  const ec2 = new EC2Client();
 
   const params = {
     InstanceIds: [config.input.ec2InstanceId],
   };
 
   try {
-    await ec2.terminateInstances(params).promise();
+    await ec2.send(new TerminateInstancesCommand(params));
     core.info(`AWS EC2 instance ${config.input.ec2InstanceId} is terminated`);
     return;
   } catch (error) {
@@ -87,14 +102,24 @@ async function terminateEc2Instance() {
 }
 
 async function waitForInstanceRunning(ec2InstanceId) {
-  const ec2 = new AWS.EC2();
-
-  const params = {
-    InstanceIds: [ec2InstanceId],
-  };
-
+  const ec2 = new EC2Client();
   try {
-    await ec2.waitFor('instanceRunning', params).promise();
+    core.info(`Checking for instance ${ec2InstanceId} to be up and running`);
+    await waitUntilInstanceRunning(
+      {
+        client: ec2,
+        maxWaitTime: 300,
+      },
+      {
+        Filters: [
+          {
+            Name: 'instance-id',
+            Values: [ec2InstanceId],
+          },
+        ],
+      },
+    );
+
     core.info(`AWS EC2 instance ${ec2InstanceId} is up and running`);
     return;
   } catch (error) {
